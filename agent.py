@@ -8,6 +8,7 @@ import math
 agent_player = None
 REWARD_WIN = 10
 REWARD_CAPTURE = 3
+EXPLORATION_WEIGHT = math.sqrt(2)
 
 def initialize(player):
     global agent_player
@@ -44,22 +45,29 @@ def expand(node):
     posible_moves = modelnode.legal_moves(node.player)
 
     # Create a new node for devery transaction
-    for move in posible_moves:
-        if not any(child.action == move for child in node.children):
+    move = posible_moves[random.randint(0, len(posible_moves) - 1)]
+
+    # If there are more children we check if that move was already done
+    if len(node.children) > 0:
+        while any(child.action == move for child in node.children):
+            move = posible_moves[random.randint(0, len(posible_moves) - 1)]
+
+    # for move in posible_moves:
+    #    if not any(child.action == move for child in node.children):
             # Clone the model of the node
-            modelnewnode = modelnode.clone()
+    modelnewnode = modelnode.clone()
 
             # In the model we perform the move to get to a new child
-            modelnewnode.make_move(node.player, move)
+    modelnewnode.make_move(node.player, move)
 
             # Create a newnode with the current model (represent the new state of the game with action the current move)
-            newnode = Node(state=modelnewnode.get_state(), parent=node , action=move)
+    newnode = Node(state=modelnewnode.get_state(), parent=node , action=move)
 
             # Add node to the list of children
-            node.children.append(newnode)
+    node.children.append(newnode)
 
     # Return one random children of the original node
-    return node.children[random.randint(0, len(modelnode.legal_moves(node.player)) - 1)]
+    return newnode
 
 def random_playout(node):
     # The actual node copies does a simulation from his current state
@@ -101,9 +109,9 @@ def select_best_child(node):
     return best_child
 
 
-def uct_value(node, exploration_weight=math.sqrt(2)):
+def uct_value(node, exploration_weight=EXPLORATION_WEIGHT):
     if node.visits == 0:
-        return float('inf')
+        return 0
 
     exploration = exploration_weight * math.sqrt(math.log(node.parent.visits) / node.visits)
     exploitation = node.total_reward / node.visits
