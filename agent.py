@@ -5,14 +5,13 @@ from famnit_gym.envs.mill.mill_model import MillModel
 import random
 import math
 
-clone_model = None
 agent_player = None
+REWARD_WIN = 10
+REWARD_CAPTURE = 3
 
-def initialize(env, player):
-    global clone_model
+def initialize(player):
     global agent_player
     agent_player = player
-    clone_model = mill.transition_model(env.unwrapped).clone()
 
 
 class Node:
@@ -76,7 +75,7 @@ def random_playout(node):
         move = actualmodel.legal_moves(node.player)[random.randint(0, len(actualmodel.legal_moves(node.player)) - 1)]
 
         # We perform that move in our new model
-        actualmodel.make_move(node.player, move)
+        actualmodel.make_move(node.player, move) 
 
         # We create the child that represents that new state
         childmodel = actualmodel.clone()
@@ -104,7 +103,7 @@ def select_best_child(node):
 
 def uct_value(node, exploration_weight=math.sqrt(2)):
     if node.visits == 0:
-        return  -float('inf')  
+        return float('inf')
 
     exploration = exploration_weight * math.sqrt(math.log(node.parent.visits) / node.visits)
     exploitation = node.total_reward / node.visits
@@ -120,8 +119,8 @@ def most_visited_child(node):
             best_child = child
     return best_child 
 
-# root = model = mill.transition_model(env.unwrapped)
-def montecarlo(iterations):
+def montecarlo(iterations, model):
+    clone_model = model.clone()
 
     root = Node(state=clone_model.get_state())
     root.player = agent_player
@@ -149,7 +148,6 @@ def montecarlo(iterations):
                 node.total_reward -= reward
             node = node.parent
 
-        return most_visited_child(root).action
+    return most_visited_child(root).action
         
-
 

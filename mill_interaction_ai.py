@@ -10,7 +10,7 @@ env = mill.env(render_mode='human')
 # to enable the user to interact with the board.
 env = UserInteraction(env)
 env.reset()
-MyAgent.initialize(env, 2)
+MyAgent.initialize(2)
 
 
 for agent in env.agent_iter():
@@ -173,7 +173,7 @@ for agent in env.agent_iter():
         
     # The IA starts with a random move
     elif agent == "player_1":
-        move = MyAgent.montecarlo(10000000)
+        move = MyAgent.montecarlo(1000, initial_model)
     else:
         env.step(None)
 
