@@ -1,6 +1,8 @@
 import gymnasium as gym
 from famnit_gym.envs import mill
 from famnit_gym.wrappers.mill import UserInteraction
+import famnit_gym.envs.mill.mill_model as MillModel
+import agent as MyAgent
 
 env = mill.env(render_mode='human')
 
@@ -8,6 +10,8 @@ env = mill.env(render_mode='human')
 # to enable the user to interact with the board.
 env = UserInteraction(env)
 env.reset()
+MyAgent.initialize(env, 2)
+
 
 for agent in env.agent_iter():
     observation, reward, termination, truncation, info = env.last()
@@ -26,8 +30,9 @@ for agent in env.agent_iter():
     # We need the model to
     initial_model = mill.transition_model(env.unwrapped)
 
+
     # We choose between the player1 and the IA
-    if agent == "player_1":
+    if agent == "player_3":
 
         # Mark all positions to which the player can move a piece.
         if info["phase"] == "placing":
@@ -167,6 +172,8 @@ for agent in env.agent_iter():
             break
         
     # The IA starts with a random move
+    elif agent == "player_1":
+        move = MyAgent.montecarlo(10000000)
     else:
         env.step(None)
 
