@@ -30,9 +30,13 @@ for agent in env.agent_iter():
     if agent == "player_1":
 
         # Mark all positions to which the player can move a piece.
-        for [_, dst, _] in info["legal_moves"]:
-            env.mark_position(dst, (128, 128, 0, 128))  # yellow shade.
-
+        if info["phase"] == "placing":
+            for [_, dst, _] in info["legal_moves"]:
+                env.mark_position(dst, (128, 128, 0, 128))  # yellow shade.
+        # Mark all the position where the player has a piece he can move
+        else:
+            for [src, _, _] in info["legal_moves"]:
+                env.mark_position(src, (128, 128, 255, 128))  # blue shade.  
         # Here, the user interacts with the board for a while.
         # In this example, the interaction is done when the user
         # clicks on an empty position on the board.
@@ -45,23 +49,20 @@ for agent in env.agent_iter():
             # - A key has been pressed.
             event = env.interact()
 
+            # We reset the capture flag 
+            canCapture = False
+
             # If the user quit, let us truncate the game.
             if event["type"] == "quit":
                 done_interacting = True
                 truncation = True
             
             # Use a different selection color for empty and occupied positions.
-            elif info["phase"] == "placing" and event["type"] == "mouse_move":
+            elif event["type"] == "mouse_move":
                 if observation[event["position"] - 1] == 0:
                     env.set_selection_color((64, 192, 0, 128))  # Green shade.
                 else:
                     env.set_selection_color((128, 128, 255, 255))  # Blue shade.
-            # On flying and moving phase we just color the pieces of the player
-            elif event["type"] == "mouse_move":
-                 for position in initial_model._all_pieces(1):
-                    # We color only the current pieces that can be moved to other position
-                    if any(src == position for [src, dst, capture] in info["legal_moves"]):
-                        env.mark_position(position, (128, 128, 255, 128)) # Light blue shade
             
             # Only if clicked on an empty position, the game continues.
             elif event["type"] == "mouse_click":
@@ -80,15 +81,17 @@ for agent in env.agent_iter():
                 # On moving and flying phase we also need to specify the piece we move and where we move it
                 else:
                     if observation[event["position"] - 1] == 1:
-                        env.mark_position(position, (128, 128, 255, 256)) # Darker blue as it is the one selected
+                        print("Mueve una pieza")
+                        position = event["position"]
+                        env.mark_position(position, (0, 0, 255, 255)) # Darker blue as it is the one selected
                         while True:  
                         
                             # Mark all the possible moves in green.
                             posible_moves = []
                             for [src, dst, capture] in info["legal_moves"]:
-                                 if src == event["position"]:
-                                      posible_moves.append([src, dst, capture])
-                                      env.mark_position(dst, (128, 128, 0, 128))
+                                if src == event["position"]:
+                                    posible_moves.append([src, dst, capture])
+                                    env.mark_position(dst, (128, 128, 0, 128)) # Yellow shade
 
                             # If there is just one move we don't need to give the user the option to choose
                             if len(posible_moves) == 1:
@@ -97,25 +100,26 @@ for agent in env.agent_iter():
                                 canCapture = True if posible_moves[0][2] > 0 else False
                                 break
                 
-                            event = env.interact()
+                            subEvent = env.interact()
 
                             # If the user quit, let us truncate the game.
-                            if event["type"] == "quit":
-                                            done_interacting = True
-                                            truncation = True
-                                            break
-                
+                            if subEvent["type"] == "quit":
+                                done_interacting = True
+                                truncation = True
+                                break
                             # If the player chooses an place to move his piece that is posible then we move it
-                            if event["type"] == "mouse_click":
+                            elif subEvent["type"] == "mouse_click":
                                 for [src, dst, capture] in posible_moves:
-                                    if dst == event["position"]:
+                                    if dst == subEvent["position"]:
                                         move = [src, dst, capture]
                                         done_interacting = True
-                                        canCapture = True if posible_moves[2] > 0 else False
+                                        canCapture = True if capture > 0 else False
+                                        print(f"Vas a mover la pieza {src} a {dst} con captura {capture} ")
                                         break
+                                break
                             # We also paint a darker green into the "selected" free space
-                            elif event["type"] == "mouse_move":
-                                if observation[event["position"] - 1] == 0:
+                            elif subEvent["type"] == "mouse_move":
+                                if observation[subEvent["position"] - 1] == 0:
                                     env.set_selection_color((64, 192, 0, 128))  # Green shade.
                                 
                 
@@ -146,13 +150,8 @@ for agent in env.agent_iter():
                         # We also paint a darker shadow into the "selected" piece
                         elif event["type"] == "mouse_move":
                             if observation[event["position"] - 1] == 2:
-                                env.set_selection_color((255, 0, 0, 255))  # Darker Red.
-                            
-            
-                        # Use a red shade for the pieces that can be captured:
-                        print("Elige una pieza para capturar")
+                                env.set_selection_color((255, 0, 0, 255))  # Darker Red. 
                 break     
-
             # If escape key has been pressed, the game is truncated.
             elif event["type"] == "key_press":
                 if event["key"] == "escape":
@@ -168,9 +167,13 @@ for agent in env.agent_iter():
             break
         
     # The IA starts with a random move
+    else:
+        env.step(None)
 
     # Make the chosen move.
-    env.step(move)
+    if(move is not None):
+        env.step(move)
+    
 
 # Close the environment.
 env.close()
