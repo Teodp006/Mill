@@ -3,6 +3,7 @@ from famnit_gym.envs import mill
 from famnit_gym.wrappers.mill import UserInteraction
 import famnit_gym.envs.mill.mill_model as MillModel
 import agent as MyAgent
+import random
 
 env = mill.env(render_mode='human')
 
@@ -10,7 +11,8 @@ env = mill.env(render_mode='human')
 # to enable the user to interact with the board.
 env = UserInteraction(env)
 env.reset()
-MyAgent.initialize(2)
+MyAgent.initialize(1)
+PLAYER_2_MODE = "human"
 
 
 for agent in env.agent_iter():
@@ -32,7 +34,7 @@ for agent in env.agent_iter():
 
 
     # We choose between the player1 and the IA
-    if agent == "player_3":
+    if agent == "player_2" and PLAYER_2_MODE == "human":
 
         # Mark all positions to which the player can move a piece.
         if info["phase"] == "placing":
@@ -85,7 +87,7 @@ for agent in env.agent_iter():
                                 canCapture = True if capture > 0 else False
                 # On moving and flying phase we also need to specify the piece we move and where we move it
                 else:
-                    if observation[event["position"] - 1] == 1:
+                    if observation[event["position"] - 1] == 2:
                         print("Mueve una pieza")
                         position = event["position"]
                         env.mark_position(position, (0, 0, 255, 255)) # Darker blue as it is the one selected
@@ -133,7 +135,7 @@ for agent in env.agent_iter():
                 
                 # If the player can do a capture then we have to let him choose the piece from the enemy he wants to capture:
                 if(canCapture):                               
-                    posible_capture = initial_model._capture_pieces(2)
+                    posible_capture = initial_model._capture_pieces(1)
                     while True:
             
             
@@ -154,7 +156,7 @@ for agent in env.agent_iter():
                             break
                         # We also paint a darker shadow into the "selected" piece
                         elif event["type"] == "mouse_move":
-                            if observation[event["position"] - 1] == 2:
+                            if observation[event["position"] - 1] == 1:
                                 env.set_selection_color((255, 0, 0, 255))  # Darker Red. 
                 break     
             # If escape key has been pressed, the game is truncated.
@@ -174,6 +176,8 @@ for agent in env.agent_iter():
     # The IA starts with a random move
     elif agent == "player_1":
         move = MyAgent.montecarlo(1000, initial_model)
+    elif agent == "player_2":
+        move = random.choice(info["legal_moves"])
     else:
         env.step(None)
 
