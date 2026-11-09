@@ -10,7 +10,14 @@ env = mill.env(render_mode='human')
 # to enable the user to interact with the board.
 env = UserInteraction(env)
 env.reset()
-MyAgent.initialize(2)
+USER_PLAYING = True
+USER_TURN = 2
+IA_PLAYING = True
+
+if USER_PLAYING:
+    IA_TURN = 1 if USER_TURN == 2 else 2
+else:
+    IA_TURN = 1
 
 
 for agent in env.agent_iter():
@@ -32,8 +39,7 @@ for agent in env.agent_iter():
 
 
     # We choose between the player1 and the IA
-    if agent == "player_3":
-
+    if agent == f"player_{USER_TURN}" and USER_PLAYING:
         # Mark all positions to which the player can move a piece.
         if info["phase"] == "placing":
             for [_, dst, _] in info["legal_moves"]:
@@ -83,10 +89,9 @@ for agent in env.agent_iter():
                                 move = [src, dst, 0]
                                 done_interacting = True
                                 canCapture = True if capture > 0 else False
-                # On moving and flying phase we also need to specify the piece we move and where we move it
+                # On moving and flying phase we also need to specify the piece we move                        and where we move it
                 else:
-                    if observation[event["position"] - 1] == 1:
-                        print("Mueve una pieza")
+                    if observation[event["position"] - 1] == USER_TURN:
                         position = event["position"]
                         env.mark_position(position, (0, 0, 255, 255)) # Darker blue as it is the one selected
                         while True:  
@@ -119,7 +124,6 @@ for agent in env.agent_iter():
                                         move = [src, dst, capture]
                                         done_interacting = True
                                         canCapture = True if capture > 0 else False
-                                        print(f"Vas a mover la pieza {src} a {dst} con captura {capture} ")
                                         break
                                 break
                             # We also paint a darker green into the "selected" free space
@@ -128,12 +132,9 @@ for agent in env.agent_iter():
                                     env.set_selection_color((64, 192, 0, 128))  # Green shade.
                                 
                 
-                            # Use a red shade for the pieces that can be captured:
-                            print("Elige una posición para moverte")
-                
                 # If the player can do a capture then we have to let him choose the piece from the enemy he wants to capture:
                 if(canCapture):                               
-                    posible_capture = initial_model._capture_pieces(2)
+                    posible_capture = initial_model._capture_pieces(IA_TURN)
                     while True:
             
             
@@ -154,7 +155,7 @@ for agent in env.agent_iter():
                             break
                         # We also paint a darker shadow into the "selected" piece
                         elif event["type"] == "mouse_move":
-                            if observation[event["position"] - 1] == 2:
+                            if observation[event["position"] - 1] == IA_TURN:
                                 env.set_selection_color((255, 0, 0, 255))  # Darker Red. 
                 break     
             # If escape key has been pressed, the game is truncated.
@@ -170,10 +171,10 @@ for agent in env.agent_iter():
         if truncation:
             print("User quit interactively!")
             break
-        
     # The IA starts with a random move
-    elif agent == "player_1":
-        move = MyAgent.montecarlo(1000, initial_model)
+    elif agent == f"player_{IA_TURN}" and IA_PLAYING:
+        move = MyAgent.montecarlo(iterations=1000, model=initial_model, player=IA_TURN)
+    # Dumb IA
     else:
         env.step(None)
 

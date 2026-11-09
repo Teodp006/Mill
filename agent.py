@@ -5,88 +5,91 @@ from famnit_gym.envs.mill.mill_model import MillModel
 import random
 import math
 
-agent_player = None
+agent_player = 0
 REWARD_WIN = 10
 REWARD_CAPTURE = 3
 
-def initialize(player):
-    global agent_player
-    agent_player = player
 
 
 class Node:
-    def __init__(self, state, parent=None, action=None):
-        self.state = state
+    def __init__(self, model, player, parent=None, action=None):
+        self.model = model.clone()
+        self.player = player
         self.parent = parent
         self.action = action
         self.children = []
         self.visits = 0
         self.total_reward = 0.0
-        self.player = 2 if parent is not None and parent.player == 1 else 1
-    
-    def isTerminal(self):
-        actualmodel = MillModel()
-        actualmodel.board = self.state
-        return actualmodel.game_over()
+        self.legal_moves = self.model.legal_moves(self.player)
+        self.is_terminal = self.model.game_over()
 
     def isFullyExpanded(self):
-        actualmodel = MillModel()
-        actualmodel.board = self.state
-        return len(self.children) == len(actualmodel.legal_moves(self.player))
+        return len(self.children) == len(self.legal_moves)
 
+def oponent_player(player):
+    return 2 if player == 1 else 1
 
 def expand(node):
-    # We create a model from the board representing the state of the node
-    modelnode = MillModel()
-    modelnode.board = node.state
 
-    # The possible moves represent the transactions from the parent to it's children
-    posible_moves = modelnode.legal_moves(node.player)
+    # The possible moves represent the transactions from the parent to it's children for every new "fresh" child so we make sure two child don't represent the same exact space
+    posible_moves = [move for move in node.legal_moves if not any(child.action == move for child in node.children)]
 
-    # Create a new node for devery transaction
-    for move in posible_moves:
-        if not any(child.action == move for child in node.children):
-            # Clone the model of the node
-            modelnewnode = modelnode.clone()
+    # We select a "not fully random move"
+    move = roll_out_move(posible_moves)
 
-            # In the model we perform the move to get to a new child
-            modelnewnode.make_move(node.player, move)
+    # We create a new model for the child node
+    new_model = node.model.clone()
 
-            # Create a newnode with the current model (represent the new state of the game with action the current move)
-            newnode = Node(state=modelnewnode.get_state(), parent=node , action=move)
+    # We perform the move in the new model
+    new_model.make_move(node.player, move)
 
-            # Add node to the list of children
-            node.children.append(newnode)
+    # We create the new model
+    next_node = Node(model=new_model, player = oponent_player(node.player) , parent=node, action=move)
 
-    # Return one random children of the original node
-    return node.children[random.randint(0, len(modelnode.legal_moves(node.player)) - 1)]
+    # We add the new node to the parents child list
+    node.children.append(next_node)
+
+    # Return the choosen child
+    return next_node
+
+
+# Policy to choose next move favorably when there is a possible capture
+def roll_out_move(moves):
+
+    # We look if there is any possible move from this stage where we can do a capture
+    capturing_moves = [move for move in moves if move[2] > 0]
+
+    # Here when dificulties were implemented we can force MTCS to simulate an scenario where a random move is performed
+    if capturing_moves:
+        return random.choice(capturing_moves)
+    else:
+        return random.choice(moves)
+
+
 
 def random_playout(node):
     # The actual node copies does a simulation from his current state
-    actualmodel = MillModel()
-    actualmodel.board = node.state
+    actualmodel = node.model.clone()
 
-    # The end node of the simulation
-    leaf = None
+    # We start from the player who has the turn
+    current_player = node.player
 
     # We simulate the match until it does not finishes
     while not actualmodel.game_over():
         # We choose a next random move
-        move = actualmodel.legal_moves(node.player)[random.randint(0, len(actualmodel.legal_moves(node.player)) - 1)]
+        move = roll_out_move(actualmodel.legal_moves(current_player))
 
         # We perform that move in our new model
-        actualmodel.make_move(node.player, move) 
+        actualmodel.make_move(current_player, move) 
 
-        # We create the child that represents that new state
-        childmodel = actualmodel.clone()
-        child = Node(state=childmodel.get_state(), parent=node, action=move)
+        # We switch the turn of the players
+        current_player = oponent_player(current_player)
 
-        # Then we move to the child node and keep exploring
-        node = child
+    # We check the end state of the match from the perspective of the root
+    match_state = actualmodel.get_phase(agent_player)
 
-    leaf = node
-
-    return leaf, -1 if actualmodel.get_phase(node.player) == "lost" else 1
+    # We return the last node and the state for that node
+    return node, -1 if  match_state == "lost" else 1
 
 def select_best_child(node):
 
@@ -102,8 +105,9 @@ def select_best_child(node):
 
 
 def uct_value(node, exploration_weight=math.sqrt(2)):
+    # In case the node has never been visited
     if node.visits == 0:
-        return float('inf')
+        return float("inf")
 
     exploration = exploration_weight * math.sqrt(math.log(node.parent.visits) / node.visits)
     exploitation = node.total_reward / node.visits
@@ -119,34 +123,43 @@ def most_visited_child(node):
             best_child = child
     return best_child 
 
-def montecarlo(iterations, model):
-    clone_model = model.clone()
+def montecarlo(iterations, model, player = 0):
 
-    root = Node(state=clone_model.get_state())
-    root.player = agent_player
+    global agent_player
+    agent_player = player
+
+    if player == 0:
+        raise ValueError("Valor de jugador inválido, introduzca un jugador")
+
+    # Initialice the root node
+    root = Node(model=model, player=agent_player)
+    
 
     for _ in range(iterations):
         node = root
 
         # 1.Selection (Exploration VS Explotation)
-        while node.isFullyExpanded() and not node.isTerminal():
+        while node.isFullyExpanded() and not node.is_terminal:
             node = select_best_child(node)  # The highest UCT value.
 
         # 2.Expansion
-        if not node.isTerminal():
+        if not node.is_terminal:
             node = expand(node)  # Add a randomly chosen child.
 
         # 3.Simulation
         node, reward = random_playout(node)  # From the root player's point of view.
 
         # 4.Backpropagation
-        while node is not None:
+        while node.parent is not None:
             node.visits += 1
-            if node.player == root.player:  # The move into node was made by the root player.
+            if oponent_player(node.player) == root.player:  # The move that leads to this node (say the opponent player or the player who is currently playing on this state) it the same that the root player
                 node.total_reward += reward
-            else:  # The opponent's move: negate the reward.
+            else:  # The move that lead to this node was made by the opposite player of the root node
                 node.total_reward -= reward
             node = node.parent
+
+        # We update also the visits to the root node
+        root.visits += 1
 
     return most_visited_child(root).action
         
