@@ -2,7 +2,8 @@ import gymnasium as gym
 from famnit_gym.envs import mill
 from famnit_gym.wrappers.mill import UserInteraction
 import famnit_gym.envs.mill.mill_model as MillModel
-import agent as MyAgent
+from agent import Agent
+import time
 
 env = mill.env(render_mode='human')
 
@@ -11,14 +12,14 @@ env = mill.env(render_mode='human')
 env = UserInteraction(env)
 env.reset()
 USER_PLAYING = True
-USER_TURN = 2
-IA_PLAYING = True
+USER_TURN = 1
+IA_PLAYING = False
 
 if USER_PLAYING:
     IA_TURN = 1 if USER_TURN == 2 else 2
 else:
     IA_TURN = 1
-
+True
 
 for agent in env.agent_iter():
     observation, reward, termination, truncation, info = env.last()
@@ -62,6 +63,9 @@ for agent in env.agent_iter():
 
             # We reset the capture flag 
             canCapture = False
+
+            # We reset the reset move flag
+            reset_move = False
 
             # If the user quit, let us truncate the game.
             if event["type"] == "quit":
@@ -117,6 +121,7 @@ for agent in env.agent_iter():
                                 done_interacting = True
                                 truncation = True
                                 break
+
                             # If the player chooses an place to move his piece that is posible then we move it
                             elif subEvent["type"] == "mouse_click":
                                 for [src, dst, capture] in posible_moves:
@@ -137,27 +142,48 @@ for agent in env.agent_iter():
                     posible_capture = initial_model._capture_pieces(IA_TURN)
                     while True:
             
-            
                         # Mark all the possible captured pieces in red.
                         for position in posible_capture:
                             env.mark_position(position, (128, 0, 0, 128))
             
-                        event = env.interact()
+                        subEvent = env.interact()
+
+                        # If we click the piece again we can undo the move while we see the capture map
+                        if subEvent["type"] == "mouse_click" and subEvent["position"] == event["position"]:
+                            done_interacting = False
+                            can_capture = False
+                            reset_move = True
+                            break
 
                         # If the user quit, let us truncate the game.
-                        if event["type"] == "quit":
-                                        done_interacting = True
-                                        truncation = True
+                        if subEvent["type"] == "quit":
+                            done_interacting = True
+                            truncation = True
+                            break
             
                         # If the player chooses a capturable piece then he captures that piece
-                        if event["type"] == "mouse_click" and any(position == event["position"] for position in posible_capture):
-                            move[2] = event["position"]
+                        if subEvent["type"] == "mouse_click" and any(position == subEvent["position"] for position in posible_capture):
+                            move[2] = subEvent["position"]
                             break
+
                         # We also paint a darker shadow into the "selected" piece
-                        elif event["type"] == "mouse_move":
-                            if observation[event["position"] - 1] == IA_TURN:
+                        elif subEvent["type"] == "mouse_move":
+                            if observation[subEvent["position"] - 1] == IA_TURN:
                                 env.set_selection_color((255, 0, 0, 255))  # Darker Red. 
-                break     
+                if not reset_move: # We only escape the extern while loop if we didn't reset the move
+                    break
+                else:
+                    # Clean everything
+                    env.clear_markings()
+                    # Paint everything as default
+                    if info["phase"] == "placing":
+                        for [_, dst, _] in info["legal_moves"]:
+                            env.mark_position(dst, (128, 128, 0, 128))  # yellow shade.
+                    # Mark all the position where the player has a piece he can move
+                    else:
+                        for [src, _, _] in info["legal_moves"]:
+                            env.mark_position(src, (128, 128, 255, 128))  # blue shade.
+
             # If escape key has been pressed, the game is truncated.
             elif event["type"] == "key_press":
                 if event["key"] == "escape":
@@ -173,7 +199,11 @@ for agent in env.agent_iter():
             break
     # The IA starts with a random move
     elif agent == f"player_{IA_TURN}" and IA_PLAYING:
-        move = MyAgent.montecarlo(iterations=1000, model=initial_model, player=IA_TURN)
+        start = time.clock_gettime_ns(time.CLOCK_REALTIME)
+        agent = Agent(IA_TURN, "hard")
+        move = agent.play(original_model=initial_model)
+        end = time.clock_gettime_ns(time.CLOCK_REALTIME)
+        print(f"Tiempo empleado por montecarlo: {(end - start)/1_000_000}ms")
     # Dumb IA
     else:
         env.step(None)
