@@ -293,3 +293,42 @@ class Node:
 
     def isFullyExpanded(self):
         return len(self.children) == len(self.legal_moves)
+def most_visited_child(node):
+    max_visited = -float('inf')
+    best_child = None
+    for child in node.children:
+        if child.visits > max_visited:
+            max_visited = child.visits
+            best_child = child
+    return best_child 
+
+def montecarlo(iterations, model):
+    clone_model = model.clone()
+
+    root_moves = clone_model.legal_moves(agent_player)
+    root_moves = _tactical_root_moves(clone_model, agent_player, root_moves)
+    root = Node(model=clone_model, allowed_actions=root_moves)
+    root.player = agent_player
+
+    for _ in range(iterations):
+        node = root
+
+        # 1.Selection (Exploration VS Explotation)
+        while node.is_fully_expanded() and not node.is_terminal():
+            node = select_best_child(node)  # The highest UCT value.
+
+        # 2.Expansion
+        if not node.is_terminal():
+            node = expand(node)  # Add a randomly chosen child.
+
+        # 3.Simulation
+        node, reward = random_playout(node, root.player)
+
+        # 4.Backpropagation
+        while node is not None:
+            node.visits += 1
+            node.total_reward += reward
+            node = node.parent
+
+    return most_visited_child(root).action
+        
