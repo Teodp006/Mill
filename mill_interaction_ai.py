@@ -11,9 +11,13 @@ env = mill.env(render_mode='human')
 # to enable the user to interact with the board.
 env = UserInteraction(env)
 env.reset()
-USER_PLAYING = True
+USER_PLAYING = False
 USER_TURN = 1
-IA_PLAYING = False
+IA_PLAYING = True
+PLAYER_DIFFICULTIES = {
+    1: "hard",
+    2: "medium",
+}
 
 if USER_PLAYING:
     IA_TURN = 1 if USER_TURN == 2 else 2
@@ -198,9 +202,10 @@ for agent in env.agent_iter():
             print("User quit interactively!")
             break
     # The IA starts with a random move
-    elif agent == f"player_{IA_TURN}" and IA_PLAYING:
+    elif agent.startswith("player_") and IA_PLAYING:
         start = time.clock_gettime_ns(time.CLOCK_REALTIME)
-        agent = Agent(IA_TURN, "hard")
+        player_number = int(agent.removeprefix("player_"))
+        agent = Agent(player_number, PLAYER_DIFFICULTIES[player_number])
         move = agent.play(original_model=initial_model)
         end = time.clock_gettime_ns(time.CLOCK_REALTIME)
         print(f"Tiempo empleado por montecarlo: {(end - start)/1_000_000}ms")

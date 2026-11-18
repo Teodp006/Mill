@@ -2,6 +2,7 @@ import gymnasium as gym
 from famnit_gym.envs import mill
 from famnit_gym.envs.mill.mill_model import MillModel
 from enum import Enum
+import hard_agent
 
 import random
 import math
@@ -22,12 +23,17 @@ class Agent:
         if player not in [1, 2]:
             raise ValueError(f"Unsuported player index: {player}, the agent should play as player 1 or 2")
         self.player = player
+        self.dificulty = dificulty
         if dificulty not in ["easy", "medium", "hard"]:
             raise ValueError(f"Unsuported dificulty mode: {dificulty}, the provided dificulties are [\"easy\", \"medium\", \"hard\"]")
         self.mistake_chance = MISTAKE_CHANCE[DIFICULTIES[dificulty].value - 1]
         self.iterations = ITERATIONS[DIFICULTIES[dificulty].value - 1]
 
     def play(self, original_model):
+        if self.dificulty == "hard":
+            hard_agent.initialize(self.player)
+            return hard_agent.montecarlo(self.iterations, original_model)
+
         model = original_model.clone()
 
         # Try the trivial winning move: if the other player has 3 pieces and we can do a capture just do it without running Montecarlo
@@ -43,7 +49,7 @@ class Agent:
                     legal_moves = model.legal_moves(self.player)
                     for move in legal_moves: # We iterate to see if one of them leads to a not lost game
                         new_model = model.clone()
-                        new_model.make_move(move, self.player)
+                        new_model.make_move(self.player, move)
                         if move[1] == dst and new_model.get_phase(self.player) != "lost":  
                             return move
         # In case there is no saving move the most probable thing is that the opponent actually wins us, so we could do a random move here but the enemy is not always optimal so there might be an scenerio were we have an extra chance to win
