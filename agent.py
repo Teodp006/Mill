@@ -50,16 +50,16 @@ def _uct_value(node, exploration_weight=math.sqrt(2)):
 class Node:
     # Store one position in the search tree.
     def __init__(self, model, player, parent=None, action=None, allowed_actions=None):
-        self.model = model
-        self.player = player
-        self.parent = parent
-        self.action = action
-        self.allowed_actions = allowed_actions
-        self.children = []
-        self.visits = 0
-        self.total_reward = 0.0
-        self.expanded_actions = set()
-        self._legal_moves = None
+        self.model = model # State the node is representing
+        self.player = player # Player that has the turn in that state (so the next one that is playing)
+        self.parent = parent # Parent node
+        self.action = action # Action that created this node from the parent node
+        self.allowed_actions = allowed_actions # 
+        self.children = [] # List of expanded children nodes
+        self.visits = 0 # Number of visits to the node
+        self.total_reward = 0.0 # Total reward of the node (wins - losses)
+        self.expanded_actions = set() # Set off unique actions that have been explored to create new children
+        self._legal_moves = None # Moves that can be performed from this node (every move that is legal)
 
     # Return legal moves that are allowed for this node.
     def legal_moves(self):
