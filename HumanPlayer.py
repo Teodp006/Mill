@@ -104,6 +104,7 @@ class HumanPlayer:
                                 done_interacting = False
                                 break
 
+                            # If we try to move our piece by clicking a place that is legal to move, we perform the move
                             for [src, dst, capture] in posible_moves:
                                 if dst == sub_event["position"]:
                                     move = [src, dst, capture]
@@ -111,6 +112,7 @@ class HumanPlayer:
                                     can_capture = True if capture > 0 else False
                                     break
                             break
+
                         # We also paint a darker green into the "selected" free space
                         elif sub_event["type"] == "mouse_move":
                             if observation[sub_event["position"] - 1] == 0:
@@ -151,7 +153,8 @@ class HumanPlayer:
                         elif sub_event["type"] == "mouse_move":
                             if observation[sub_event["position"] - 1] == opponent:
                                 self.env.set_selection_color((255, 0, 0, 255))  # Darker Red. 
-                
+
+                # This branch is used for when you undo your move to paint everything as default, otherwise it might not show all the available moves as usual
                 if reset_move:
                     # Clean everything
                     self.env.clear_markings()
