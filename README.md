@@ -78,7 +78,7 @@ Handled by `match_stats.py`.
 - `material\_margin\_percent` for each seat:
   
     $\frac{(\texttt{own remaining} − \texttt{opponent remaining})}{\texttt{total pieces} \times 100}$  
-    - $remaining$: pieces in hand +   pieces on the board
+    - $\texttt{remaining}$: pieces in hand +   pieces on the board
     - $\texttt{total pices}$ = 9
 - `mean_decision_ms` only for agent players to meassure the computational time
 
