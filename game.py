@@ -1,7 +1,7 @@
 from time import perf_counter
 
 from famnit_gym.envs import mill
-from HumanPlayer import HumanPlayer
+from human_player import HumanPlayer
 from agent import Agent
 from match_stats import GameRecorder
 from match_stats import pieces_remaining
@@ -13,14 +13,17 @@ class Game:
         self.players = (player_1, player_2)
         
 
-    def play(self):
+    def play(self, seed=None):
         # The recorder follows this match until it ends or the user leaves.
         recorder = GameRecorder(self.players[0], self.players[1])
         end_reason = None
         winner_player = None
 
-        # Create and reset the environment.
-        self.environment.reset()
+        # Create and reset the environment. Batch mode can pass a seed for replayable runs.
+        if seed is None:
+            self.environment.reset()
+        else:
+            self.environment.reset(seed=seed)
         for player in self.players:
             if isinstance(player, HumanPlayer):
                 player.quit_requested = False

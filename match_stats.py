@@ -24,7 +24,7 @@ import csv
 from datetime import datetime
 from pathlib import Path
 
-from HumanPlayer import HumanPlayer
+from human_player import HumanPlayer
 
 # Each player starts with 9 pieces. Unplaced pieces still count as material.
 INITIAL_PIECES = 9

@@ -12,7 +12,7 @@ REWARD_THREAT_CAPTURE = 2
 
 # Dificulties suported and number of operations for each one where base is just normal Montecarlo.
 DIFICULTIES = Enum("Dificulties", ["easy", "medium", "hard", "base"])
-ITERATIONS = [20, 100, 1000, 100]
+ITERATIONS = [20, 100, 1000, 1000]
 
 
 def _opponent_player(current_player):
@@ -54,7 +54,7 @@ class Node:
         self.player = player # Player that has the turn in that state (so the next one that is playing)
         self.parent = parent # Parent node
         self.action = action # Action that created this node from the parent node
-        self.allowed_actions = allowed_actions # 
+        self.allowed_actions = allowed_actions # Set of inminent actions we allow only Montecarlo to explore so it priorices captures, blocks or any move that can be good
         self.children = [] # List of expanded children nodes
         self.visits = 0 # Number of visits to the node
         self.total_reward = 0.0 # Total reward of the node (wins - losses)
@@ -258,9 +258,16 @@ class Agent:
         return best_child
 
     def _montecarlo(self, iterations, model):
-        # Initialice the root node
+        
+        # Base montecarlo consider any possible move
         root_moves = model.legal_moves(self.player)
-        root_moves = self._tactical_root_moves(model, self.player, root_moves)
+
+        # In the optimiced versions Montecarlo uses a prune on the root to explore paths from the most promising actions
+        # such as: capturing/forming mills, blocking opponent mills and finally if there are no clear better action we run montecarlo
+        # to choose the best one from all the available ones.
+        if self.dificulty != "base":
+            root_moves = self._tactical_root_moves(model, self.player, root_moves)
+
         root = Node(model=model, player=self.player, allowed_actions=root_moves)
 
         for _ in range(iterations):

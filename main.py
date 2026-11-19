@@ -3,12 +3,16 @@ import agent
 from famnit_gym.envs import mill
 from famnit_gym.wrappers.mill import UserInteraction
 from game import Game
-from HumanPlayer import HumanPlayer
+from human_player import HumanPlayer
 from match_stats import MatchSession
 from match_stats import close_session
 from match_stats import print_match_result
+import numpy as np
+import random
 
 DEBUG = True
+# Batch games use BASE_SEED, BASE_SEED+1, ... so the same run can be repeated.
+BASE_SEED = 2026
 MENU_DIFFICULTIES = list(agent.DIFICULTIES._member_names_)
 
 
@@ -183,15 +187,18 @@ def main():
 
             # Simulations run without a window
             for game_number in range(1, match_count + 1):
+                seed = BASE_SEED + game_number - 1
+                random.seed(seed)
+                np.random.seed(seed)
 
                 # We just print the information of the process
-                print(f"[{game_number}/{match_count}] playing...", flush=True)
+                print(f"[{game_number}/{match_count}] playing (seed {seed})...", flush=True)
 
                 # Create the environment without render
                 env = mill.env(render_mode=None)
 
                 # Start the actual game
-                record = Game(env, *players).play()
+                record = Game(env, *players).play(seed=seed)
 
                 # To save the stats of the game
                 session.add(record)
