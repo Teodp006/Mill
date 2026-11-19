@@ -60,7 +60,7 @@ By default we asume player-1 is the one starting. If you pick contender 2, the s
 
 | Label | Idea | MCTS iterations |
 |-------|------|-----------------|
-| **base** | Plain Monte Carlo: uniform random expansion and playouts. No tactical root filter. | 100 |
+| **base** | Plain Monte Carlo: uniform random expansion and playouts. No tactical root filter. | 1000 |
 | **easy**/**medium**/**hard** | Tactical move weights + root prune (take mills / block threats). |20/100/1000|
 
 
