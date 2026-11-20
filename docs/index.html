@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mill</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@450;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="game.css">
+</head>
+<body>
+  <section id="gate" aria-label="Elegir partida">
+    <div class="floaters" aria-hidden="true">
+      <i class="pip you"></i>
+      <i class="pip ai"></i>
+      <i class="pip you small"></i>
+      <i class="pip ai small"></i>
+    </div>
+    <p class="mark">Mill</p>
+    <h1>¿Cómo de difícil?</h1>
+    <div class="cards">
+      <button class="card" type="button" data-difficulty="easy" disabled>
+        <span class="mug you" aria-hidden="true"><b></b></span>
+        Tranqui
+      </button>
+      <button class="card" type="button" data-difficulty="medium" disabled>
+        <span class="mug you" aria-hidden="true"><b></b></span>
+        Normal
+      </button>
+      <button class="card" type="button" data-difficulty="hard" disabled>
+        <span class="mug ai" aria-hidden="true"><b></b></span>
+        Difícil
+      </button>
+      <button class="card" type="button" data-difficulty="base" disabled>
+        <span class="mug split" aria-hidden="true"><b></b></span>
+        Travieso
+      </button>
+    </div>
+    <div class="who">
+      <p>¿Quién sale?</p>
+      <button class="who-btn is-on" type="button" data-start="human"><i class="pip you"></i>Yo</button>
+      <button class="who-btn" type="button" data-start="ai"><i class="pip ai"></i>Molino</button>
+    </div>
+    <p id="warmup">Un momento, están llegando las fichas…</p>
+  </section>
+
+  <section id="table" hidden>
+    <header class="bar">
+      <button id="again" type="button">Otra</button>
+      <p id="status">Te toca</p>
+    </header>
+    <div class="stage">
+      <div class="board-frame">
+        <svg id="board" viewBox="0 0 100 100" role="img" aria-label="Tablero de Mill"></svg>
+      </div>
+      <aside class="history">
+        <div class="players">
+          <div class="seat you">
+            <i class="pip you"></i>
+            <div>
+              <strong>Tú</strong>
+              <div id="you-hand" class="hand"></div>
+            </div>
+          </div>
+          <div class="seat ai">
+            <i class="pip ai"></i>
+            <div>
+              <strong>Molino</strong>
+              <div id="ai-hand" class="hand"></div>
+            </div>
+          </div>
+        </div>
+        <p id="hint"></p>
+        <ol id="log"></ol>
+      </aside>
+    </div>
+  </section>
+
+  <pre id="error" class="error" hidden></pre>
+  <script src="game.js"></script>
+</body>
+</html>
